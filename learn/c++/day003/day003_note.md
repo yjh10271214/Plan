@@ -87,6 +87,16 @@ tags: [vector, 扩容, 迭代器失效, reserve, map, lambda, 红黑树], [迭�
 > - 必须用 unique_lock 而非 lock_guard，因为 wait 需要临时解锁。
 > - 必须用带谓词的 wait 或 while 循环检查条件，防止虚假唤醒。
 
+## 原子操作与无锁编程
+> - std::atomic<T> 保证对单个变量的操作是不可分割的，无需互斥锁，性能更高。
+> - 普通 int 的 ++ 是三步操作，多线程不安全；atomic<int> 的 ++ 是原子指令，线程安全。
+> - CAS（Compare And Swap）：compare_exchange_strong(expected, desired)，原子的比较并交换，无锁数据结构的基石。
+> - 内存序：
+>   - relaxed：只保证原子性，无顺序保证。
+>   - acquire（读）/ release（写）：成对使用，构成跨线程的 happens-before 关系。
+>   - seq_cst：默认，全局顺序一致，安全但略慢。
+> - 原子操作适用于简单共享变量（计数器、标志位），复杂数据结构仍需互斥锁或更高级的无锁算法。
+
 ## others
 > - std::vector<bool> 是特化版本，内部用 bit 而非 byte 存储，不满足连续容器要求，使用时需注意。
 > - reserve() 只改变 capacity，不改变 size；resize() 同时改变 size 和 capacity。

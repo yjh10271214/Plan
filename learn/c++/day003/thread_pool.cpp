@@ -58,7 +58,7 @@ public:
             std::lock_guard<std::mutex> lock(mQueueMtx);
             mTasks.emplace(std::forward<Func>(f));
         }
-        mCv.notify_one();   
+        mCv.notify_one();
     }
     int size() const { return mWorkers.size(); }
 };

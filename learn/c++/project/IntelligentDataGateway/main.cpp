@@ -7,6 +7,7 @@
 #include <atomic>
 #include <vector>
 #include <functional>
+#include <future>
 
 struct SensorData {
     int sensor_id;
@@ -17,6 +18,78 @@ struct SensorData {
         : sensor_id(id), temperature(temp), timestamp(ts){}
     
     virtual ~SensorData() = default;
+};
+
+class ThreadPool {
+private:
+    std::vector<std::thread> mWorkers;
+    std::queue<std::function<void()>> mTasks;
+
+    std::mutex mQueueMtx;
+    std::condition_variable mCv;
+    std::atomic<bool> mStopFlag{false};
+
+public:
+    explicit ThreadPool(std::size_t threads_count = 4) {
+        for (std::size_t i = 0; i < threads_count; ++i) {
+            mWorkers.emplace_back([this](){
+                while (true) {
+                    std::function<void()> task;
+                    {
+                        std::unique_lock<std::mutex> lock(mQueueMtx);
+                        mCv.wait(lock, [this](){
+                            return mStopFlag.load() || !mTasks.empty();
+                        });
+
+                        if (mStopFlag.load() && mTasks.empty()) {
+                            return;
+                        }
+
+                        task = std::move(mTasks.front());
+                        mTasks.pop();
+                    }
+
+                    task();
+                }
+            });
+        }
+    }
+
+    ~ThreadPool() {
+        mStopFlag.store(true);
+        mCv.notify_all();
+        for (std::thread& worker : mWorkers) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+    }
+
+    template <typename Func, typename... Args>
+    auto submit(Func&& f, Args&&... args)
+        -> std::future<typename std::result_of<Func(Args...)>::type>
+    {
+        using ReturnType = typename std::result_of<Func(Args...)>::type;
+         // 1. 创建一个 packaged_task，包装用户传入的函数和参数
+        //    使用 shared_ptr 是因为 packaged_task 不可拷贝，需要分配到堆上
+        auto taskPtr = std::make_shared<std::packaged_task<ReturnType()>>(
+            std::bind(std::forward<Func>(f), std::forward<Args>(args)...)
+        );
+         // 2. 拿到与 packaged_task 关联的 future，返回给调用者
+        std::future<ReturnType> result = taskPtr->get_future();
+
+         // 3. 将 packaged_task 包装成 void() 任务，入队
+        {
+            std::lock_guard<std::mutex> lock(mQueueMtx);
+            mTasks.emplace([taskPtr]() {
+                (*taskPtr)(); // 执行 packaged_task，结果自动写入 future
+            });
+        }
+        mCv.notify_one();
+        return result;
+    }
+
+    size_t size() const { return mWorkers.size(); }
 };
 
 template <typename T>
@@ -163,8 +236,27 @@ public:
     }
 };
 
+int add(int a, int b) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    return a + b;
+}
+
 int main() {
-    SensorGateway gateway;
-    gateway.start();
+    // SensorGateway gateway;
+    // gateway.start();
+
+    ThreadPool pool(4);
+
+    // 提交任务，拿到 future
+    auto f1 = pool.submit(add, 3, 4);
+    auto f2 = pool.submit([](int x, int y) { return x * y; }, 5, 6);
+    auto f3 = pool.submit([]() { 
+        std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
+        return std::string("hello"); 
+    });
+
+    std::cout << "add(3,4) = " << f1.get() << std::endl;   // 输出 7，会阻塞等待任务完成
+    std::cout << "5*6 = " << f2.get() << std::endl;         // 输出 30
+    std::cout << "string: " << f3.get() << std::endl;       // 输出 hello
     return 0;
 }

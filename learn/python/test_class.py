@@ -111,3 +111,59 @@ class Teacher(Person):
     
     def teach(self, course_name):
         print(f'{self.name}{self.title}正在讲授{course_name}.')
+
+
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __str__(self):
+        return f"Point({self.x}, {self.y})"
+
+    def __repr__(self):
+        return f"Point({self.x}, {self.y})"
+
+p = Point(3, 5)
+print(str(p))   # Point(3, 5)
+print(repr(p))  # Point(3, 5)
+print(p)        # Point(3, 5)，print 会自动调用 __str__
+#__str__ 面向用户，可读性好。
+#__repr__ 面向开发者，通常能唯一标识对象。
+#如果只定义 __repr__，__str__ 会默认使用 __repr__。
+
+
+class Circle:
+    def __init__(self, radius):
+        self._radius = radius
+
+    @property #限制私有变量的权限
+    def radius(self):
+        """获取半径"""
+        return self._radius
+
+    @radius.setter
+    def radius(self, value):
+        if value < 0:
+            raise ValueError("半径不能为负")
+        self._radius = value
+
+c = Circle(5)
+print(c.radius)   # 5，直接访问，无需括号
+c.radius = 10     # 调用 setter
+print(c.radius)   # 10
+# c.radius = -1   # 抛出 ValueError
+
+
+class Person:
+    def __init__(self, name):
+        self._name = name      # 约定私有
+        self.__age = 0          # 名称改写
+
+p = Person("Tom")
+print(p._name)      # Tom，虽然约定私有但能访问
+# print(p.__age)    # 报错，因为改名为 _Person__age
+print(p._Person__age)  # 0，可以绕过
+
+

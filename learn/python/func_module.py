@@ -180,3 +180,92 @@ download.__wrapped__('MySQL必知必会.pdf')
 upload.__wrapped__('Python从新手到大师.pdf')
 
 
+# *args 接收任意数量的位置参数，打包成元组
+def sum_all(*args):
+    return sum(args)
+
+sum_all(1, 2, 3)        # 6
+sum_all(1, 2, 3, 4, 5)  # 15
+
+# **kwargs 接收任意数量的关键字参数，打包成字典
+def print_info(**kwargs):
+    for k, v in kwargs.items():
+        print(f"{k}: {v}")
+
+print_info(name="Tom", age=20)
+# name: Tom
+# age: 20
+
+
+def f(a, b, *args, c=10, **kwargs):
+    pass
+
+# 顺序必须是：位置参数 → *args → 默认参数 → **kwargs
+
+
+def f():
+    return 1, 2, 3   # 返回元组 (1, 2, 3)
+
+x = f()
+print(x)   # (1, 2, 3)
+
+a, b, c = f()   # 解包
+print(a, b, c)  # 1 2 3
+
+# 返回 None
+def g():
+    print("hello")
+    # 没有 return 语句，默认返回 None
+
+result = g()   # None
+
+
+#修改全局变量：global
+#嵌套函数修改外层变量：nonlocal
+def outer():
+    x = 10
+    def inner():
+        nonlocal x
+        x = 20
+    inner()
+    print(x)   # 20
+
+outer()
+
+#map(func, iterable)：对每个元素应用函数
+lst = [1, 2, 3]
+result = list(map(lambda x: x**2, lst))
+print(result)   # [1, 4, 9]
+
+# 也可以直接写列表推导式，更常用
+[x**2 for x in lst]
+
+#filter(func, iterable)：按条件筛选
+lst = [1, 2, 3, 4, 5, 6]
+result = list(filter(lambda x: x % 2 == 0, lst))
+print(result)   # [2, 4, 6]
+
+# 列表推导式写法
+[x for x in lst if x % 2 == 0]
+
+# reduce(func, iterable)：累积计算
+from functools import reduce
+
+lst = [1, 2, 3, 4, 5]
+result = reduce(lambda x, y: x * y, lst)   # 连乘
+print(result)   # 120
+
+
+len()     # 长度
+sum()     # 求和
+max()     # 最大值
+min()     # 最小值
+abs()     # 绝对值
+round()   # 四舍五入
+sorted()  # 排序，返回新列表
+enumerate()  # 同时给索引和值
+zip()     # 合并多个可迭代对象
+
+
+
+

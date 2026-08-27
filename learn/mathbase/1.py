@@ -74,3 +74,59 @@ loss = loss_fn(logits, label)
 loss.backward()
 print("\ndL/dz 梯度：")
 print(logits.grad)
+
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+
+# 1. 准备数据
+transform = transforms.ToTensor() # 把图片转成张量，并归一化到 [0,1]
+train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+test_dataset  = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+test_loader  = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+# 2. 定义模型：单层全连接，输入 28*28=784，输出 10 个类别
+class SoftmaxRegression(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc = nn.Linear(784, 10)  # 线性层，对应 z = Wx + b
+
+    def forward(self, x):
+        x = x.view(x.size(0), -1)    # 把图片展平成一维向量
+        z = self.fc(x)                # 线性变换
+        return z                      # 返回 logits，不用手动 softmax
+
+model = SoftmaxRegression()
+
+# 3. 定义损失函数（内部包含 softmax + 交叉熵）
+criterion = nn.CrossEntropyLoss()
+
+# 4. 定义优化器：随机梯度下降
+optimizer = optim.SGD(model.parameters(), lr=0.01)
+
+# 5. 训练循环
+for epoch in range(5):
+    total_loss = 0
+    for images, labels in train_loader:
+        # 前向传播
+        logits = model(images)
+        loss = criterion(logits, labels)
+
+        # 反向传播
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    print(f'Epoch {epoch+1}, Loss: {total_loss/len(train_loader):.4f}')
+
+
+
+

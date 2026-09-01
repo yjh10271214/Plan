@@ -98,6 +98,10 @@ for epoch in range(epochs):
         a1 = sigmoid(z1)        # (64, 128)
         z2 = a1 @ W2 + b2       # (64, 10)
         probs = softmax(z2)     # (64, 10)
+        
+        # ---------- 计算损失 ----------
+        loss = cross_entropy_loss(probs, y_batch)
+        epoch_loss += loss
 
         # ---------- 反向传播 ----------
         # 输出层梯度
